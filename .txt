@@ -1,0 +1,41 @@
+BACKEND-APP-PUERTO-WILLIAMS
+└── server
+    ├── dist
+    │   ├── app.controller.d.ts
+    │   ├── app.controller.js
+    │   ├── app.controller.js.map
+    │   ├── app.module.d.ts
+    │   ├── app.module.js
+    │   ├── app.module.js.map
+    │   ├── app.service.d.ts
+    │   ├── app.service.js
+    │   ├── app.service.js.map
+    │   ├── main.d.ts
+    │   ├── main.js
+    │   ├── main.js.map
+    │   └── tsconfig.build.tsbuildinfo
+    ├── node_modules
+    ├── prisma
+    │   └── schema.prisma
+    ├── src
+    │   ├── app.controller.spec.ts
+    │   ├── app.controller.ts
+    │   ├── app.module.ts
+    │   ├── app.service.ts
+    │   └── main.ts
+    └── test
+        ├── .editorconfig
+        ├── .env
+        ├── .gitignore
+        ├── .prettierrc
+        ├── desktop.ini
+        ├── eslint.config.mjs
+        ├── nest-cli.json
+        ├── package.json
+        ├── pnpm-lock.yaml
+        ├── README.md
+        ├── tsconfig.build.json
+        ├── tsconfig.json
+ 
+
+         
