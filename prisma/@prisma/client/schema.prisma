@@ -1,0 +1,110 @@
+// server/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  // Usar la ruta estándar para el cliente generado
+  output   = "@prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // Toma la URL de la variable de entorno .env
+}
+
+// Modelo para los usuarios de la aplicación
+model User {
+  id          String @id @default(cuid()) // Identificador único de la base de datos
+  firebaseUid String @unique // Identificador único de Firebase Auth para este usuario
+  email       String @unique // Email del usuario (debe ser único)
+  name        String // Nombre del usuario
+
+  role   Role   @default(CONSERJE) // Rol asignado al usuario
+  status Status @default(PENDING) // Estado actual del usuario/solicitud
+
+  assignedBy String? // Opcional: ID (firebaseUid o id de DB) del Admin que aprobó/asignó el rol
+  createdAt  DateTime @default(now()) // Fecha de creación del registro
+  updatedAt  DateTime @updatedAt // Fecha de última actualización
+
+  // Relaciones inversas
+  requests  CredentialRequest[] // Solicitudes de credencial hechas por este usuario
+  shiftLogs ShiftLog[] // Registros de inicio/fin de turno de este usuario
+  novedades Novedad[] // Novedades/Registros de actividad creados por este usuario
+}
+
+// Modelo para las solicitudes iniciales de credencial/rol
+model CredentialRequest {
+  id          String   @id @default(cuid())
+  userId      String // ID del usuario que realiza la solicitud
+  desiredRole Role // Rol que el usuario desea obtener
+  reason      String? // Opcional: Razón o comentario en la solicitud
+  status      Status   @default(PENDING) // Estado actual de la solicitud
+  submittedAt DateTime @default(now()) // Fecha de envío de la solicitud
+  // reviewedBy String? // Opcional: ID del admin que revisó la solicitud
+  // reviewedAt DateTime? // Opcional: Fecha de revisión
+
+  // Relación con el usuario
+  user User @relation(fields: [userId], references: [id])
+
+  // Índice para buscar solicitudes por usuario
+  @@index([userId])
+}
+
+// Modelo para registrar el INICIO y FIN de los turnos (podría evolucionar)
+model ShiftLog {
+  id        String    @id @default(cuid())
+  userId    String // ID del usuario que registra el evento
+  type      ShiftType // Tipo de evento: IN (inicio) u OUT (fin)
+  timestamp DateTime  @default(now()) // Momento exacto en que se registró el evento
+
+  // Relación con el usuario
+  user User @relation(fields: [userId], references: [id])
+
+  // Índice para buscar logs por usuario
+  @@index([userId])
+}
+
+// Modelo para las Novedades o Registros de Actividad durante un turno
+model Novedad {
+  id          String   @id @default(cuid())
+  userId      String // ID del usuario que crea la novedad
+  // shiftId  String?  // Opcional: Futura relación a un modelo 'Shift' más completo
+  timestamp   DateTime @default(now()) // Momento exacto de creación de la novedad
+  description String // Contenido de la novedad (texto manual o transcrito de voz)
+  entryMethod String // Método de entrada: "MANUAL" o "VOICE"
+  createdAt   DateTime @default(now())
+
+  // Relación con el usuario
+  user User @relation(fields: [userId], references: [id])
+  // @@index([shiftId]) // Si se añade shiftId
+
+  // Índices útiles
+  @@index([userId])
+}
+
+// --- ENUMS ---
+
+// Roles definidos en la aplicación
+enum Role {
+  ADMIN // Administrador general
+  MAYORDOMO // Jefe de conserjes/operaciones
+  CONSERJE // Rol base para personal de conserjería
+  NOCHERO // Rol específico para turno nocturno
+  JARDINERO // Rol específico para jardinería
+  PISCINERO // Rol específico para mantenimiento de piscina
+  // Podríamos añadir más roles específicos si son necesarios
+}
+
+// Posibles estados para Usuarios y Solicitudes de Credencial
+enum Status {
+  PENDING // Esperando aprobación/revisión
+  APPROVED // Aprobado/Activo
+  CANCELLED // Cancelado (por usuario o admin antes de aprobación)
+  SUSPENDED // Cuenta/Acceso suspendido temporalmente
+  REJECTED // Solicitud rechazada
+}
+
+// Tipos de eventos para el registro de inicio/fin de turno
+enum ShiftType {
+  IN // Marca el inicio de un turno
+  OUT // Marca el fin de un turno
+}
