@@ -1,9 +1,7 @@
-// server/prisma/schema.prisma
+
 
 generator client {
-  provider = "prisma-client-js"
-  // Usar la ruta estándar para el cliente generado
-  output   = "@prisma/client"
+  provider = "prisma-client-js"  
 }
 
 datasource db {

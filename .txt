@@ -1,18 +1,26 @@
 ├── server/
 │   ├── prisma/
 │   │   ├── @prisma/client/
-│   │   │   └── runtime/
+│   │   │   └── runtime
 │   │   ├── migrations/
 │   │   └── schema.prisma
 │   │
 │   ├── src/
-│   │   ├── common/
-│   │   ├── config/
-│   │   ├── logs/
-│   │   ├── roles/
-│   │   ├── shifts/
-│   │   ├── speech/
-│   │   ├── users/
+│   │   ├── auth/
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── auth.module.ts
+│   │   │   └── auth.service.ts
+│   │   ├── common
+│   │   ├── config
+│   │   ├── logs
+│   │   ├── prisma/
+│   │   │   ├── prisma.module.ts
+│   │   │   └── prisma.service.ts
+│   │   ├── roles
+│   │   ├── users
+│   │   ├── shifts
+│   │   ├── speech
+│   │   ├── users
 │   │   ├── app.controller.spec.ts
 │   │   ├── app.controller.ts
 │   │   ├── app.module.ts

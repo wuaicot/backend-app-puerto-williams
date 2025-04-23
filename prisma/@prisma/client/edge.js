@@ -207,11 +207,12 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
         "fromEnvVar": "DATABASE_URL",
-        "value": "postgresql://postgres:SaraLinares2025.@localhost:5433/pwdb?schema=public"
+        "value": null
       }
     }
   },
