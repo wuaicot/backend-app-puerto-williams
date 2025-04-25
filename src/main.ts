@@ -4,7 +4,14 @@ import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 4000);
-}
 
-void bootstrap();
+  app.enableCors({
+    origin: "http://localhost:3000",
+  });
+
+  await app.listen(4000);
+  console.log("Backend corriendo en http://localhost:4000");
+}
+bootstrap().catch((error) => {
+  console.error("Error during application bootstrap:", error);
+});

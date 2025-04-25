@@ -2,30 +2,26 @@
 import {
   Controller,
   Post,
-  Body,
   Headers,
   UnauthorizedException,
   Req,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
-import { Request } from "express"; // Importar Request de express
+import { Request } from "express"; // ✅ Import necesario para usar Request
 
-@Controller("api/auth") // Define el prefijo de ruta base para este controlador (ej: /api/auth)
+@Controller("api/auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // Endpoint para el registro
+  /**
+   * POST /api/auth/register
+   * Registra un usuario nuevo si no existe
+   */
   @Post("register")
-  async register(
-    @Headers("Authorization") authHeader: string,
-    @Req() req: Request,
-  ) {
+  async register(@Headers("Authorization") authHeader: string) {
     console.log("AuthController: POST /register llamado");
-    console.log("Headers:", req.headers); // Log para ver qué headers llegan
 
-    // Extraer el token del header 'Authorization: Bearer <token>'
-    const token = authHeader?.split(" ")[1];
-
+    const token = this.extractToken(authHeader);
     if (!token) {
       console.error("Token no encontrado en el header Authorization");
       throw new UnauthorizedException(
@@ -34,40 +30,49 @@ export class AuthController {
     }
 
     try {
-      return await this.authService.registerUser(token);
+      const user = await this.authService.registerUser(token);
+      console.log("Usuario registrado/existente:", user.email);
+      return user;
     } catch (error) {
       console.error("Error en AuthController register:", error);
-      // Re-lanzar o manejar el error apropiadamente
       throw error;
     }
   }
 
-  // Endpoint para el login (Admin y Conserje)
+  /**
+   * POST /api/auth/login
+   * Login para Admin o Conserjes aprobados
+   */
   @Post("login")
   async login(
     @Headers("Authorization") authHeader: string,
     @Req() req: Request,
-  ): Promise<{ accessToken: string }> {
+  ) {
     console.log("AuthController: POST /login llamado");
-    console.log("Headers:", req.headers); // Log para ver qué headers llegan
 
-    // Extraer el token del header 'Authorization: Bearer <token>'
-    const token = authHeader?.split(" ")[1];
-
+    const token = this.extractToken(authHeader);
     if (!token) {
       console.error("Token no encontrado en el header Authorization");
       throw new UnauthorizedException(
-        "Authorization header missing or malformed",
+        "Authorization header missing or malformed"
       );
     }
 
     try {
-      // Llama al servicio para manejar el login
-      return await this.authService.loginUser(token);
+      const user = await this.authService.loginUser(token);
+      console.log("Login exitoso para:", user.email);
+      return user;
     } catch (error) {
       console.error("Error en AuthController login:", error);
-      // Re-lanzar o manejar el error apropiadamente
       throw error;
     }
+  }
+
+  /**
+   * Extrae el token Bearer del header
+   */
+  private extractToken(authHeader: string | undefined): string | null {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+    return authHeader.split(" ")[1];
   }
 }
