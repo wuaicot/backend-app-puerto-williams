@@ -8,7 +8,9 @@ import { Role, Status } from "@prisma/client";
 export class AuthService {
   constructor(private prisma: PrismaService) {}
 
-  async verifyFirebaseToken(idToken: string) {
+  async verifyFirebaseToken(
+    idToken: string,
+  ): Promise<{ uid: string; name?: string; email?: string }> {
     return admin.auth().verifyIdToken(idToken);
   }
 
@@ -70,7 +72,11 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { firebaseUid },
     });
-    if (!user || user.status !== Status.APPROVED || user.role !== Role.CONSERJE) {
+    if (
+      !user ||
+      user.status !== Status.APPROVED ||
+      user.role !== Role.CONSERJE
+    ) {
       throw new UnauthorizedException(
         "Acceso denegado. Solo el administrador autorizado puede ingresar.",
       );
