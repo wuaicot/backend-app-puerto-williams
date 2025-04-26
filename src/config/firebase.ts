@@ -13,7 +13,7 @@ if (!admin.apps.length) {
     .replace(/\\n/g, "\n")
     .replace(/\\$/gm, "");
 
-  console.log("🔑 Firebase Private Key (parsed):\n", cleanedKey);
+  //console.log("🔑 Firebase Private Key (parsed):\n", cleanedKey);
 
   admin.initializeApp({
     credential: admin.credential.cert({

@@ -1,21 +1,26 @@
+BACKEND-APP-PUERTO-WILLIAMS
 ├── server/
 │   ├── prisma/
-│   │   ├── @prisma/client/
-│   │   │   └── runtime
+│   │   ├── @prisma/client
 │   │   ├── migrations/
 │   │   └── schema.prisma
 │   │
 │   ├── src/
+│   │   ├── admin/
+│   │   │   ├── admin.controller.ts
+│   │   │   ├── admin.module.ts
+│   │   │   └── admin.service.ts
 │   │   ├── auth/
 │   │   │   ├── auth.controller.ts
 │   │   │   ├── auth.module.ts
 │   │   │   └── auth.service.ts
 │   │   ├── common
-│   │   ├── config
-│   │   ├── logs
-│   │   ├── prisma/
+│   │   ├── config/
+│   │   │   └── firebase.ts
+│   │   ├── database/
 │   │   │   ├── prisma.module.ts
 │   │   │   └── prisma.service.ts
+│   │   ├── logs
 │   │   ├── roles
 │   │   ├── users
 │   │   ├── shifts
@@ -27,11 +32,12 @@
 │   │   ├── app.service.ts
 │   │   └── main.ts
 │   │
-│   ├── test/
+│   ├── test
 │   ├── .editorconfig
 │   ├── .env
 │   ├── .gitignore
 │   ├── .prettierrc
+│   ├── .txt
 │   ├── desktop.ini
 │   ├── eslint.config.mjs
 │   ├── nest-cli.json

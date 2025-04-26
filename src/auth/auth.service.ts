@@ -1,7 +1,7 @@
-//server/src/auth/auth.service.ts
+// server/src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { PrismaService } from "../database/prisma.service";
-import admin from "../config/firebase"
+import admin from "../config/firebase";
 import { Role, Status } from "@prisma/client";
 
 @Injectable()
@@ -16,16 +16,13 @@ export class AuthService {
     const decoded = await this.verifyFirebaseToken(idToken);
     const firebaseUid = decoded.uid;
 
-    // Verificar si el usuario ya existe
+    // Verificar si ya existe
     const existing = await this.prisma.user.findUnique({
       where: { firebaseUid },
     });
+    if (existing) return existing;
 
-    if (existing) {
-      return existing; // Ya está registrado
-    }
-
-    // Crear nuevo usuario con status PENDING y rol CONSERJE
+    // Crear nuevo conserje PENDING
     return this.prisma.user.create({
       data: {
         firebaseUid,
@@ -40,19 +37,40 @@ export class AuthService {
   async loginUser(idToken: string) {
     const decoded = await this.verifyFirebaseToken(idToken);
     const firebaseUid = decoded.uid;
+    const email = decoded.email;
 
+    const allowedAdminEmail = process.env.ALLOWED_ADMIN_EMAIL;
+    if (email === allowedAdminEmail) {
+      // Upsert: si no existe, lo crea; si existe, actualiza (aunque no haya cambios)
+      const adminUser = await this.prisma.user.upsert({
+        where: { firebaseUid },
+        create: {
+          firebaseUid,
+          name: decoded.name ?? "Admin",
+          email: email!,
+          role: Role.ADMIN,
+          status: Status.APPROVED,
+        },
+        update: {
+          // Podrías actualizar nombre si cambió en Google
+          name: decoded.name,
+          status: Status.APPROVED,
+        },
+      });
+      return {
+        id: adminUser.id,
+        name: adminUser.name,
+        email: adminUser.email,
+        role: adminUser.role,
+        status: adminUser.status,
+      };
+    }
+
+    // Para conserjes (cuando implementes su login)
     const user = await this.prisma.user.findUnique({
       where: { firebaseUid },
     });
-
-    // Validar que sea el único administrador permitido
-    const allowedAdminEmail = process.env.ALLOWED_ADMIN_EMAIL;
-    if (
-      !user ||
-      user.status !== Status.APPROVED ||
-      user.role !== Role.ADMIN ||
-      user.email !== allowedAdminEmail
-    ) {
+    if (!user || user.status !== Status.APPROVED || user.role !== Role.CONSERJE) {
       throw new UnauthorizedException(
         "Acceso denegado. Solo el administrador autorizado puede ingresar.",
       );
