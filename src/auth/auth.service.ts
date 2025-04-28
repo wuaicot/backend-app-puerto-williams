@@ -18,7 +18,7 @@ export class AuthService {
    * - Siempre genera una nueva CredentialRequest PENDING.
    */
   async registerUser(idToken: string) {
-    const decoded = await this.verifyFirebaseToken(idToken);
+    const decoded: { uid: string; email?: string; name?: string } = await this.verifyFirebaseToken(idToken);
     const firebaseUid = decoded.uid;
     const email = decoded.email ?? "sin-email";
     const name = decoded.name ?? "Sin nombre";
@@ -59,7 +59,7 @@ export class AuthService {
    * - Si no, busca Conserje con status APPROVED.
    */
   async loginUser(idToken: string) {
-    const decoded = await this.verifyFirebaseToken(idToken);
+    const decoded: { uid: string; email?: string; name?: string } = await this.verifyFirebaseToken(idToken);
     const firebaseUid = decoded.uid;
     const email = decoded.email ?? "";
 
@@ -80,13 +80,23 @@ export class AuthService {
           status: Status.APPROVED,
         },
       });
-      return { id: adminUser.id, role: adminUser.role, status: adminUser.status };
+      return {
+        id: adminUser.id,
+        role: adminUser.role,
+        status: adminUser.status,
+      };
     }
 
     // Conserje aprobado
     const user = await this.prisma.user.findUnique({ where: { firebaseUid } });
-    if (!user || user.role !== Role.CONSERJE || user.status !== Status.APPROVED) {
-      throw new UnauthorizedException("Acceso denegado. Solo conserjes aprobados pueden ingresar.");
+    if (
+      !user ||
+      user.role !== Role.CONSERJE ||
+      user.status !== Status.APPROVED
+    ) {
+      throw new UnauthorizedException(
+        "Acceso denegado. Solo conserjes aprobados pueden ingresar.",
+      );
     }
     return { id: user.id, role: user.role, status: user.status };
   }

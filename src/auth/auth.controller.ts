@@ -14,7 +14,9 @@ export class AuthController {
 
   private extractToken(authHeader: string | undefined): string {
     if (!authHeader?.startsWith("Bearer ")) {
-      throw new UnauthorizedException("Authorization header missing or malformed");
+      throw new UnauthorizedException(
+        "Authorization header missing or malformed",
+      );
     }
     return authHeader.split(" ")[1];
   }
