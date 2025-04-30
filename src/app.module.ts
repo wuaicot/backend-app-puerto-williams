@@ -1,13 +1,20 @@
+// server/src/app.module.ts
 import { Module } from "@nestjs/common";
-import { AdminModule } from "./admin/admin.module";
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
 import { PrismaModule } from "./database/prisma.module";
-import { AuthModule } from "./auth/auth.module"; // ✅ importa AuthModule
+import { AuthModule } from "./auth/auth.module";
+import { AdminModule } from "./admin/admin.module";
+import { NovedadesModule } from "./novedades/novedades.module";
 
 @Module({
   imports: [
     PrismaModule,
+    AuthModule,
     AdminModule,
-    AuthModule, // ✅ incluye AuthModule
+    NovedadesModule, // <-- aquí
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

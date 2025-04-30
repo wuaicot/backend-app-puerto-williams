@@ -6,33 +6,36 @@ import {
   Param,
   Query,
   Body,
-  NotFoundException,
+  BadRequestException,
 } from "@nestjs/common";
 import { AdminService } from "./admin.service";
 import { Role } from "@prisma/client";
 
-@Controller("api/admin")
+@Controller("admin") // rutas bajo /api/admin debido al prefijo global
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  /** GET /api/admin/users?status=PENDING|APPROVED|REJECTED */
   @Get("users")
   async getUsers(@Query("status") status: string) {
     return this.adminService.findUsersByStatus(status);
   }
 
-  /** PATCH /api/admin/users/:id/approve */
   @Patch("users/:id/approve")
   async approveUser(@Param("id") userId: string, @Body("role") role: Role) {
+    if (!role) {
+      throw new BadRequestException('El campo "role" es requerido.');
+    }
     return this.adminService.approveUser(userId, role);
   }
 
-  /** PATCH /api/admin/users/:id/reject */
   @Patch("users/:id/reject")
   async rejectUser(
     @Param("id") userId: string,
     @Body("reason") reason: string,
   ) {
+    if (!reason) {
+      throw new BadRequestException('El campo "reason" es requerido.');
+    }
     return this.adminService.rejectUser(userId, reason);
   }
 }

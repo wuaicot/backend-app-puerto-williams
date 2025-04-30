@@ -1,9 +1,12 @@
-//server/src/main.ts
+// server/src/main.ts
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Prefijo global “/api” para todos los controllers
+  app.setGlobalPrefix("api");
 
   app.enableCors({
     origin: "http://localhost:3000",
