@@ -10,7 +10,7 @@ import { NovedadesService } from "./novedades.service";
 import { CreateNovedadDto } from "./dto/create-novedad.dto";
 import { FirebaseAuthGuard } from "../auth/firebase-auth.guard";
 
-@Controller("novedades") // /api/novedades gracias a setGlobalPrefix
+@Controller("/api/novedades") // /api/novedades gracias a setGlobalPrefix
 @UseGuards(FirebaseAuthGuard) // Protege todos los endpoints de este controlador
 export class NovedadesController {
   constructor(private readonly novedadesService: NovedadesService) {}
