@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../database/prisma.service";
 import { ShiftType } from "@prisma/client";
 
@@ -7,18 +7,15 @@ export class NovedadesService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * @param firebaseUid UID de Firebase extraído por el guard
-   * @param description texto transcrito
-   * @param entryMethod 'VOICE' | 'MANUAL'
-   * @param isLast si marca fin de turno
+   * Crea una novedad y (opcionalmente) marca fin de turno.
    */
   async createNovedad(
     firebaseUid: string,
     description: string,
-    entryMethod: string,
+    entryMethod: "VOICE" | "MANUAL",
     isLast: boolean,
   ) {
-    // 1) Creamos la novedad vinculada al usuario
+    // 1) Crea la novedad conectada al usuario por firebaseUid
     const novedad = await this.prisma.novedad.create({
       data: {
         description,
@@ -29,7 +26,7 @@ export class NovedadesService {
       },
     });
 
-    // 2) Si es último, creamos evento OUT; si no, podría ser IN
+    // 2) Si es último registro, crea un ShiftLog OUT para ese usuario
     if (isLast) {
       await this.prisma.shiftLog.create({
         data: {
@@ -40,5 +37,32 @@ export class NovedadesService {
     }
 
     return novedad;
+  }
+
+  /**
+   * Recupera todas las novedades de un usuario (por firebaseUid),
+   * con filtro opcional por rango de fechas.
+   */
+  async findAllForUser(firebaseUid: string, start?: string, end?: string) {
+    // Busca al usuario en primer lugar
+    const user = await this.prisma.user.findUnique({
+      where: { firebaseUid },
+    });
+    if (!user) throw new NotFoundException("Usuario no encontrado");
+
+    // Construye cláusula WHERE
+    const where: { userId: string; timestamp?: { gte?: Date; lte?: Date } } = {
+      userId: user.id.toString(),
+    };
+    if (start || end) {
+      where.timestamp = {};
+      if (start) where.timestamp.gte = new Date(start);
+      if (end) where.timestamp.lte = new Date(end);
+    }
+
+    return this.prisma.novedad.findMany({
+      where,
+      orderBy: { timestamp: "desc" },
+    });
   }
 }

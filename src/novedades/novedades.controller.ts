@@ -1,36 +1,45 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
-  BadRequestException,
-  UseGuards,
+  Query,
   Req,
+  UseGuards,
 } from "@nestjs/common";
 import { NovedadesService } from "./novedades.service";
-import { CreateNovedadDto } from "./dto/create-novedad.dto";
 import { FirebaseAuthGuard } from "../auth/firebase-auth.guard";
+import { CreateNovedadDto } from "./dto/create-novedad.dto";
+import { Request } from "express";
 
-@Controller("/api/novedades") // /api/novedades gracias a setGlobalPrefix
-@UseGuards(FirebaseAuthGuard) // Protege todos los endpoints de este controlador
+interface AuthenticatedRequest extends Request {
+  user: { uid: string };
+}
+
+@Controller("api/novedades")
+@UseGuards(FirebaseAuthGuard)
 export class NovedadesController {
   constructor(private readonly novedadesService: NovedadesService) {}
 
   @Post()
   async create(
+    @Req() req: AuthenticatedRequest,
     @Body() dto: CreateNovedadDto,
-    @Req() req: { user: { uid: string } },
   ) {
-    const { description, entryMethod, isLast } = dto;
-    if (!description || !entryMethod) {
-      throw new BadRequestException("description and entryMethod are required");
-    }
-    // Aquí obtenemos el Firebase UID desde el request
-    const firebaseUid: string = req.user.uid;
     return this.novedadesService.createNovedad(
-      firebaseUid,
-      description,
-      entryMethod,
-      isLast,
+      req.user.uid,
+      dto.description,
+      dto.entryMethod,
+      dto.isLast,
     );
+  }
+
+  @Get()
+  async findAll(
+    @Req() req: AuthenticatedRequest,
+    @Query("start") start?: string,
+    @Query("end") end?: string,
+  ) {
+    return this.novedadesService.findAllForUser(req.user.uid, start, end);
   }
 }

@@ -34,7 +34,7 @@ BACKEND-APP-PUERTO-WILLIAMS
    │   │   ├── dto/
    │   │   │   └── create-novedad.dto.ts
    │   │   ├── novedades.controller.ts
-   │   │   ├── novedades.modules.ts
+   │   │   ├── novedades.module.ts
    │   │   └── novedades.servises.ts
    │   │
    │   ├── roles
