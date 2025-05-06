@@ -7,5 +7,6 @@ import { NovedadesController } from "./novedades.controller";
   imports: [PrismaModule],
   providers: [NovedadesService],
   controllers: [NovedadesController],
+  exports: [NovedadesService], // <-- Exportamos el servicio
 })
 export class NovedadesModule {}

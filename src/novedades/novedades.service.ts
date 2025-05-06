@@ -6,54 +6,34 @@ import { ShiftType } from "@prisma/client";
 export class NovedadesService {
   constructor(private prisma: PrismaService) {}
 
-  /**
-   * Crea una novedad y (opcionalmente) marca fin de turno.
-   */
+  /** Crea una novedad y (opcionalmente) marca fin de turno. */
   async createNovedad(
     firebaseUid: string,
     description: string,
     entryMethod: "VOICE" | "MANUAL",
     isLast: boolean,
   ) {
-    // 1) Crea la novedad conectada al usuario por firebaseUid
     const novedad = await this.prisma.novedad.create({
       data: {
         description,
         entryMethod,
-        user: {
-          connect: { firebaseUid },
-        },
+        user: { connect: { firebaseUid } },
       },
     });
-
-    // 2) Si es último registro, crea un ShiftLog OUT para ese usuario
     if (isLast) {
       await this.prisma.shiftLog.create({
-        data: {
-          user: { connect: { firebaseUid } },
-          type: ShiftType.OUT,
-        },
+        data: { user: { connect: { firebaseUid } }, type: ShiftType.OUT },
       });
     }
-
     return novedad;
   }
 
-  /**
-   * Recupera todas las novedades de un usuario (por firebaseUid),
-   * con filtro opcional por rango de fechas.
-   */
+  /** Recupera todas las novedades de un usuario, con filtro opcional por fechas. */
   async findAllForUser(firebaseUid: string, start?: string, end?: string) {
-    // Busca al usuario en primer lugar
-    const user = await this.prisma.user.findUnique({
-      where: { firebaseUid },
-    });
+    const user = await this.prisma.user.findUnique({ where: { firebaseUid } });
     if (!user) throw new NotFoundException("Usuario no encontrado");
 
-    // Construye cláusula WHERE
-    const where: { userId: string; timestamp?: { gte?: Date; lte?: Date } } = {
-      userId: user.id.toString(),
-    };
+    const where: any = { userId: user.id.toString() };
     if (start || end) {
       where.timestamp = {};
       if (start) where.timestamp.gte = new Date(start);
@@ -62,6 +42,13 @@ export class NovedadesService {
 
     return this.prisma.novedad.findMany({
       where,
+      orderBy: { timestamp: "desc" },
+    });
+  }
+
+  /** Devuelve todas las novedades sin filtrar. Solo accesible para Admin. */
+  async findAllAdmin() {
+    return this.prisma.novedad.findMany({
       orderBy: { timestamp: "desc" },
     });
   }

@@ -1,4 +1,3 @@
-// server/src/admin/admin.controller.ts
 import {
   Controller,
   Get,
@@ -7,13 +6,23 @@ import {
   Query,
   Body,
   BadRequestException,
+  UseGuards,
 } from "@nestjs/common";
 import { AdminService } from "./admin.service";
 import { Role } from "@prisma/client";
+import { FirebaseAuthGuard } from "../auth/firebase-auth.guard";
+import { Roles } from "../common/decorators/roles.decorator";
+import { RolesGuard } from "../common/guards/roles.guard";
+import { NovedadesService } from "../novedades/novedades.service";
 
-@Controller("admin") // rutas bajo /api/admin debido al prefijo global
+@Controller("admin") // rutas bajo /api/admin por el prefijo global
+@UseGuards(FirebaseAuthGuard, RolesGuard)
+@Roles("ADMIN")
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly novedadesService: NovedadesService,
+  ) {}
 
   @Get("users")
   async getUsers(@Query("status") status: string) {
@@ -21,7 +30,10 @@ export class AdminController {
   }
 
   @Patch("users/:id/approve")
-  async approveUser(@Param("id") userId: string, @Body("role") role: Role) {
+  async approveUser(
+    @Param("id") userId: string,
+    @Body("role") role: Role,
+  ) {
     if (!role) {
       throw new BadRequestException('El campo "role" es requerido.');
     }
@@ -37,5 +49,11 @@ export class AdminController {
       throw new BadRequestException('El campo "reason" es requerido.');
     }
     return this.adminService.rejectUser(userId, reason);
+  }
+
+  /** Devuelve todas las novedades (incidencias) a nivel global para Admin */
+  @Get("incidencias")
+  async getAllIncidencias() {
+    return this.novedadesService.findAllAdmin();
   }
 }
