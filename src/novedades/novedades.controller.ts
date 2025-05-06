@@ -15,8 +15,7 @@ import { Request } from "express";
 interface AuthenticatedRequest extends Request {
   user: { uid: string };
 }
-
-@Controller("api/novedades")
+@Controller("novedades")
 @UseGuards(FirebaseAuthGuard)
 export class NovedadesController {
   constructor(private readonly novedadesService: NovedadesService) {}
