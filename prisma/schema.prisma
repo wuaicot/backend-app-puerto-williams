@@ -82,12 +82,14 @@ model Novedad {
 
 // Roles definidos en la aplicación
 enum Role {
-  ADMIN      // Administrador general
+  ADMIN      // Administrador general  
+  CONSERJE   // Rol base para personal de 
+  conserjería
   MAYORDOMO  // Jefe de conserjes/operaciones
-  CONSERJE   // Rol base para personal de conserjería
   NOCHERO    // Rol específico para turno nocturno
   JARDINERO  // Rol específico para jardinería
-  PISCINERO  // Rol específico para mantenimiento de piscina
+  PISCINERO  
+  MANTENIMIENTO // realiza mantencion en el edificio
   // Podríamos añadir más roles específicos si son necesarios
 }
 

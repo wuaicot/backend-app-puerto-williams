@@ -1,3 +1,4 @@
+// server/src/admin/admin.controller.ts
 import {
   Controller,
   Get,
@@ -15,7 +16,7 @@ import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { NovedadesService } from "../novedades/novedades.service";
 
-@Controller("admin") // rutas bajo /api/admin por el prefijo global
+@Controller("admin")
 @UseGuards(FirebaseAuthGuard, RolesGuard)
 @Roles("ADMIN")
 export class AdminController {
@@ -32,11 +33,22 @@ export class AdminController {
   @Patch("users/:id/approve")
   async approveUser(
     @Param("id") userId: string,
-    @Body("role") role: Role,
+    @Body("role") roleStr: string,
   ) {
-    if (!role) {
+    if (!roleStr) {
       throw new BadRequestException('El campo "role" es requerido.');
     }
+
+    // Normalizamos y validamos el role contra el enum de Prisma
+    const normalized = roleStr.toUpperCase();
+    if (!(normalized in Role)) {
+      throw new BadRequestException(
+        `Role inválido. Debe ser uno de: ${Object.values(Role).join(", ")}`,
+      );
+    }
+    const role = normalized as Role;
+
+    // Llamamos al servicio con el role corregido
     return this.adminService.approveUser(userId, role);
   }
 
@@ -51,7 +63,6 @@ export class AdminController {
     return this.adminService.rejectUser(userId, reason);
   }
 
-  /** Devuelve todas las novedades (incidencias) a nivel global para Admin */
   @Get("incidencias")
   async getAllIncidencias() {
     return this.novedadesService.findAllAdmin();
