@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 import { AdminController } from "./admin.controller";
 import { AdminService } from "./admin.service";
-import { FirebaseAuthGuard } from "../auth/firebase-auth.guard";
-import { RolesGuard } from "../common/guards/roles.guard";
+//import { FirebaseAuthGuard } from "../auth/firebase-auth.guard";
+//import { RolesGuard } from "../common/guards/roles.guard";
 import { NovedadesModule } from "../novedades/novedades.module";
 
 @Module({

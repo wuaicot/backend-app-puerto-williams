@@ -4,7 +4,10 @@ import { PrismaClient } from "@prisma/client";
 
 @Injectable()
 // Una vez que la importación funcione, la extensión 'extends PrismaClient' será válida
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   constructor() {
     super({
       // Opcional: configuraciones de Prisma Client (ej: logging)

@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../database/prisma.service";
-import { ShiftType } from "@prisma/client";
+import { ShiftType, Prisma } from "@prisma/client";
 
 @Injectable()
 export class NovedadesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  /** Crea una novedad y (opcionalmente) marca fin de turno. */
+  /**
+   * Crea una novedad y (opcionalmente) marca fin de turno.
+   */
   async createNovedad(
     firebaseUid: string,
     description: string,
@@ -20,24 +22,45 @@ export class NovedadesService {
         user: { connect: { firebaseUid } },
       },
     });
+
     if (isLast) {
       await this.prisma.shiftLog.create({
-        data: { user: { connect: { firebaseUid } }, type: ShiftType.OUT },
+        data: {
+          user: { connect: { firebaseUid } },
+          type: ShiftType.OUT,
+        },
       });
     }
+
     return novedad;
   }
 
-  /** Recupera todas las novedades de un usuario, con filtro opcional por fechas. */
+  /**
+   * Recupera todas las novedades de un usuario, con filtro opcional por fechas.
+   */
   async findAllForUser(firebaseUid: string, start?: string, end?: string) {
-    const user = await this.prisma.user.findUnique({ where: { firebaseUid } });
-    if (!user) throw new NotFoundException("Usuario no encontrado");
+    const user = await this.prisma.user.findUnique({
+      where: { firebaseUid },
+    });
+    if (!user) {
+      throw new NotFoundException("Usuario no encontrado");
+    }
 
-    const where: any = { userId: user.id.toString() };
+    // Construcción segura de filtro de fechas
+    const dateFilter: { gte?: Date; lte?: Date } = {};
+    if (start) {
+      dateFilter.gte = new Date(start);
+    }
+    if (end) {
+      dateFilter.lte = new Date(end);
+    }
+
+    // Cláusula WHERE tipada
+    const where: Prisma.NovedadWhereInput = {
+      userId: user.id.toString(),
+    };
     if (start || end) {
-      where.timestamp = {};
-      if (start) where.timestamp.gte = new Date(start);
-      if (end) where.timestamp.lte = new Date(end);
+      where.timestamp = dateFilter;
     }
 
     return this.prisma.novedad.findMany({
@@ -46,7 +69,9 @@ export class NovedadesService {
     });
   }
 
-  /** Devuelve todas las novedades sin filtrar. Solo accesible para Admin. */
+  /**
+   * Devuelve todas las novedades sin filtrar. Solo accesible para Admin.
+   */
   async findAllAdmin() {
     return this.prisma.novedad.findMany({
       orderBy: { timestamp: "desc" },
