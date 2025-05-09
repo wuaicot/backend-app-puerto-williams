@@ -15,6 +15,7 @@ import { Request } from "express";
 interface AuthenticatedRequest extends Request {
   user: { uid: string };
 }
+
 @Controller("novedades")
 @UseGuards(FirebaseAuthGuard)
 export class NovedadesController {
@@ -40,5 +41,21 @@ export class NovedadesController {
     @Query("end") end?: string,
   ) {
     return this.novedadesService.findAllForUser(req.user.uid, start, end);
+  }
+
+  @Get("current-status")
+  async getCurrentStatus(@Req() req: AuthenticatedRequest) {
+    const status = await this.novedadesService.getCurrentTurnStatus(
+      req.user.uid,
+    );
+    return { status };
+  }
+
+  @Get("current-duration")
+  async getCurrentDuration(@Req() req: AuthenticatedRequest) {
+    const minutes = await this.novedadesService.getCurrentShiftDuration(
+      req.user.uid,
+    );
+    return { minutes };
   }
 }

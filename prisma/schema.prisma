@@ -51,6 +51,7 @@ model ShiftLog {
   userId     String    // ID del usuario que registra el evento
   type       ShiftType // Tipo de evento: IN (inicio) u OUT (fin)
   timestamp  DateTime  @default(now()) // Momento exacto en que se registró el evento
+  
 
   // Relación con el usuario
   user       User      @relation(fields: [userId], references: [id])

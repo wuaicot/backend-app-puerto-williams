@@ -7,7 +7,7 @@ export class NovedadesService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Crea una novedad y (opcionalmente) marca fin de turno.
+   * Crea una novedad y registra IN/OUT en ShiftLog.
    */
   async createNovedad(
     firebaseUid: string,
@@ -15,6 +15,14 @@ export class NovedadesService {
     entryMethod: "VOICE" | "MANUAL",
     isLast: boolean,
   ) {
+    // 1) Obtener usuario
+    const user = await this.prisma.user.findUnique({
+      where: { firebaseUid },
+      select: { id: true },
+    });
+    if (!user) throw new NotFoundException("Usuario no encontrado");
+
+    // 2) Crear la novedad
     const novedad = await this.prisma.novedad.create({
       data: {
         description,
@@ -23,14 +31,13 @@ export class NovedadesService {
       },
     });
 
-    if (isLast) {
-      await this.prisma.shiftLog.create({
-        data: {
-          user: { connect: { firebaseUid } },
-          type: ShiftType.OUT,
-        },
-      });
-    }
+    // 3) Registrar turno IN/OUT
+    await this.prisma.shiftLog.create({
+      data: {
+        userId: user.id,
+        type: isLast ? ShiftType.OUT : ShiftType.IN,
+      },
+    });
 
     return novedad;
   }
@@ -42,26 +49,14 @@ export class NovedadesService {
     const user = await this.prisma.user.findUnique({
       where: { firebaseUid },
     });
-    if (!user) {
-      throw new NotFoundException("Usuario no encontrado");
-    }
+    if (!user) throw new NotFoundException("Usuario no encontrado");
 
-    // Construcción segura de filtro de fechas
     const dateFilter: { gte?: Date; lte?: Date } = {};
-    if (start) {
-      dateFilter.gte = new Date(start);
-    }
-    if (end) {
-      dateFilter.lte = new Date(end);
-    }
+    if (start) dateFilter.gte = new Date(start);
+    if (end) dateFilter.lte = new Date(end);
 
-    // Cláusula WHERE tipada
-    const where: Prisma.NovedadWhereInput = {
-      userId: user.id.toString(),
-    };
-    if (start || end) {
-      where.timestamp = dateFilter;
-    }
+    const where: Prisma.NovedadWhereInput = { userId: user.id };
+    if (start || end) where.timestamp = dateFilter;
 
     return this.prisma.novedad.findMany({
       where,
@@ -70,11 +65,56 @@ export class NovedadesService {
   }
 
   /**
-   * Devuelve todas las novedades sin filtrar. Solo accesible para Admin.
+   * Devuelve todas las novedades sin filtrar. Solo Admin.
    */
   async findAllAdmin() {
     return this.prisma.novedad.findMany({
       orderBy: { timestamp: "desc" },
     });
+  }
+
+  /**
+   * Estado actual de turno:
+   * - 'IN'  si el último ShiftLog es IN
+   * - 'OUT' en cualquier otro caso
+   */
+  async getCurrentTurnStatus(firebaseUid: string): Promise<"IN" | "OUT"> {
+    const lastLog = await this.prisma.shiftLog.findFirst({
+      where: { user: { firebaseUid } },
+      orderBy: { timestamp: "desc" },
+      select: { type: true },
+    });
+    return lastLog?.type === ShiftType.IN ? "IN" : "OUT";
+  }
+
+  /**
+   * Duración del turno actual calculada:
+   * - Si el último log es OUT: diferencia entre el OUT y el IN anterior.
+   * - Si está abierto (último log IN): diferencia entre ahora y ese IN.
+   */
+  async getCurrentShiftDuration(firebaseUid: string): Promise<number> {
+    // Obtener últimos logs
+    const lastOut = await this.prisma.shiftLog.findFirst({
+      where: { user: { firebaseUid }, type: ShiftType.OUT },
+      orderBy: { timestamp: "desc" },
+      select: { timestamp: true },
+    });
+    const lastIn = await this.prisma.shiftLog.findFirst({
+      where: { user: { firebaseUid }, type: ShiftType.IN },
+      orderBy: { timestamp: "desc" },
+      select: { timestamp: true },
+    });
+
+    if (lastOut && lastIn && lastOut.timestamp >= lastIn.timestamp) {
+      // Turno cerrado: duración entre IN y OUT
+      return Math.round(
+        (lastOut.timestamp.getTime() - lastIn.timestamp.getTime()) / 60000,
+      );
+    }
+    if (lastIn) {
+      // Turno abierto: duración desde IN hasta ahora
+      return Math.round((Date.now() - lastIn.timestamp.getTime()) / 60000);
+    }
+    return 0;
   }
 }

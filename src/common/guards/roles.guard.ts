@@ -1,3 +1,4 @@
+//server/src/common/guards/roles.guard.ts
 import {
   Injectable,
   CanActivate,
@@ -9,7 +10,7 @@ import { ROLES_KEY } from "../decorators/roles.decorator";
 import { Request } from "express";
 
 interface AuthenticatedRequest extends Request {
-  user: { uid: string; email: string };
+  user: { uid: string; email: string; role: string };
 }
 
 @Injectable()
@@ -24,8 +25,7 @@ export class RolesGuard implements CanActivate {
     if (!requiredRoles) return true;
 
     const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const userRole = (req.user as any).role as string;
-    // Asumimos que tu FirebaseAuthGuard inyecta `req.user.role`
+    const userRole = req.user.role;
 
     if (!requiredRoles.includes(userRole)) {
       throw new ForbiddenException("Permiso denegado");

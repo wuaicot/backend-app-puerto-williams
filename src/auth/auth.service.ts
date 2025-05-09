@@ -23,7 +23,9 @@ export class AuthService {
     const firebaseUid = decoded.uid;
     const user = await this.prisma.user.findUnique({ where: { firebaseUid } });
     if (!user) {
-      throw new NotFoundException("Usuario no encontrado");
+      throw new NotFoundException(
+        "Usuario no conocido. ¿ya solicitó acceso a Administración?",
+      );
     }
     return user;
   }
