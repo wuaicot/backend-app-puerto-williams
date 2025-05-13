@@ -1,8 +1,8 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ConserjeriaService } from './conserjeria.service';
-import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
+import { Controller, Get, UseGuards } from "@nestjs/common";
+import { ConserjeriaService } from "./conserjeria.service";
+import { FirebaseAuthGuard } from "../auth/firebase-auth.guard";
 
-@Controller('conserjeria/mayordomo')
+@Controller("conserjeria/mayordomo")
 @UseGuards(FirebaseAuthGuard)
 export class MayordomoController {
   constructor(private readonly conserjeriaService: ConserjeriaService) {}
