@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+// server/src/novedades/novedades.service.ts
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../database/prisma.service";
 import { ShiftType, Prisma } from "@prisma/client";
 
@@ -15,14 +16,7 @@ export class NovedadesService {
     entryMethod: "VOICE" | "MANUAL",
     isLast: boolean,
   ) {
-    // 1) Obtener usuario
-    const user = await this.prisma.user.findUnique({
-      where: { firebaseUid },
-      select: { id: true },
-    });
-    if (!user) throw new NotFoundException("Usuario no encontrado");
-
-    // 2) Crear la novedad
+    // Crear la novedad
     const novedad = await this.prisma.novedad.create({
       data: {
         description,
@@ -31,10 +25,10 @@ export class NovedadesService {
       },
     });
 
-    // 3) Registrar turno IN/OUT
+    // Registrar turno IN/OUT
     await this.prisma.shiftLog.create({
       data: {
-        userId: user.id,
+        user: { connect: { firebaseUid } },
         type: isLast ? ShiftType.OUT : ShiftType.IN,
       },
     });
@@ -43,21 +37,26 @@ export class NovedadesService {
   }
 
   /**
-   * Recupera todas las novedades de un usuario, con filtro opcional por fechas.
+   * Recupera todas las novedades (de todos los usuarios),
+   * con filtro opcional por fechas `start` y `end`.
    */
-  async findAllForUser(firebaseUid: string, start?: string, end?: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { firebaseUid },
-    });
-    if (!user) throw new NotFoundException("Usuario no encontrado");
-
+  async findAllForUser(
+    _firebaseUid: string,
+    start?: string,
+    end?: string,
+  ) {
+    // Construir filtro de fechas
     const dateFilter: { gte?: Date; lte?: Date } = {};
     if (start) dateFilter.gte = new Date(start);
     if (end) dateFilter.lte = new Date(end);
 
-    const where: Prisma.NovedadWhereInput = { userId: user.id };
-    if (start || end) where.timestamp = dateFilter;
+    // Solo aplicamos timestamp si vienen fechas
+    const where: Prisma.NovedadWhereInput = {};
+    if (start || end) {
+      where.timestamp = dateFilter;
+    }
 
+    // Devolvemos TODOS los registros, ordenados descendentemente
     return this.prisma.novedad.findMany({
       where,
       orderBy: { timestamp: "desc" },
@@ -65,7 +64,8 @@ export class NovedadesService {
   }
 
   /**
-   * Devuelve todas las novedades sin filtrar. Solo Admin.
+   * Devuelve todas las novedades sin filtrar. (Antiguo findAllAdmin)
+   * Puede seguir usándose internamente si se desea.
    */
   async findAllAdmin() {
     return this.prisma.novedad.findMany({
@@ -88,12 +88,11 @@ export class NovedadesService {
   }
 
   /**
-   * Duración del turno actual calculada:
+   * Duración del turno actual:
    * - Si el último log es OUT: diferencia entre el OUT y el IN anterior.
    * - Si está abierto (último log IN): diferencia entre ahora y ese IN.
    */
   async getCurrentShiftDuration(firebaseUid: string): Promise<number> {
-    // Obtener últimos logs
     const lastOut = await this.prisma.shiftLog.findFirst({
       where: { user: { firebaseUid }, type: ShiftType.OUT },
       orderBy: { timestamp: "desc" },
@@ -106,13 +105,11 @@ export class NovedadesService {
     });
 
     if (lastOut && lastIn && lastOut.timestamp >= lastIn.timestamp) {
-      // Turno cerrado: duración entre IN y OUT
       return Math.round(
         (lastOut.timestamp.getTime() - lastIn.timestamp.getTime()) / 60000,
       );
     }
     if (lastIn) {
-      // Turno abierto: duración desde IN hasta ahora
       return Math.round((Date.now() - lastIn.timestamp.getTime()) / 60000);
     }
     return 0;
