@@ -6,3 +6,7 @@
 git fetch origin
 git reset --hard origin/main
 git clean -fdn
+
+_____________________________________________________
+*psql:
+TRUNCATE TABLE public."User", public."CredentialRequest", public."ShiftLog", public."Novedad" RESTART IDENTITY CASCADE;_____________________________________________________
