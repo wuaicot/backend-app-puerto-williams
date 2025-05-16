@@ -4,7 +4,6 @@ import {
   Get,
   Post,
   Body,
-  Query,
   Req,
   UseGuards,
 } from "@nestjs/common";
@@ -35,31 +34,24 @@ export class NovedadesController {
     );
   }
 
-  /**
-   * Ahora devuelve TODOS los registros (sin filtrar por usuario),
-   * aplicando solo los parámetros start/end de query si vienen.
-   */
+  /** Devuelve todos los registros como un libro global */
   @Get()
-  async findAll(
-    @Req() req: AuthenticatedRequest,
-    @Query("start") start?: string,
-    @Query("end") end?: string,
-  ) {
-    return this.novedadesService.findAllForUser(
-      req.user.uid, // sigue pasando el uid, pero el service ya lo ignora
-      start,
-      end,
-    );
+  async findAll() {
+    return this.novedadesService.findAllAdmin();
   }
 
+  /** Estado actual del turno para el usuario autenticado */
   @Get("current-status")
   async getCurrentStatus(@Req() req: AuthenticatedRequest) {
-    const status = await this.novedadesService.getCurrentTurnStatus(
-      req.user.uid,
-    );
-    return { status };
+    const { status, sessionStart } =
+      await this.novedadesService.getCurrentTurnStatus(req.user.uid);
+    return {
+      status,
+      sessionStart: sessionStart?.toISOString() ?? null,
+    };
   }
 
+  /** Duración en minutos del turno actual */
   @Get("current-duration")
   async getCurrentDuration(@Req() req: AuthenticatedRequest) {
     const minutes = await this.novedadesService.getCurrentShiftDuration(

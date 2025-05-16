@@ -1,4 +1,5 @@
 // server/src/admin/admin.controller.ts
+
 import {
   Controller,
   Get,
@@ -38,18 +39,13 @@ export class AdminController {
     if (!roleStr) {
       throw new BadRequestException('El campo "role" es requerido.');
     }
-
-    // Normalizamos y validamos el role contra el enum de Prisma
     const normalized = roleStr.toUpperCase();
     if (!(normalized in Role)) {
       throw new BadRequestException(
         `Role inválido. Debe ser uno de: ${Object.values(Role).join(", ")}`,
       );
     }
-    const role = normalized as Role;
-
-    // Llamamos al servicio con el role corregido
-    return this.adminService.approveUser(userId, role);
+    return this.adminService.approveUser(userId, normalized as Role);
   }
 
   @Patch("users/:id/reject")
@@ -63,6 +59,7 @@ export class AdminController {
     return this.adminService.rejectUser(userId, reason);
   }
 
+  /** Incidencias (todas las novedades), acceso exclusivo Admin */
   @Get("incidencias")
   async getAllIncidencias() {
     return this.novedadesService.findAllAdmin();

@@ -1,5 +1,5 @@
 // server/src/novedades/novedades.service.ts
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../database/prisma.service";
 import { ShiftType, Prisma } from "@prisma/client";
 
@@ -16,7 +16,12 @@ export class NovedadesService {
     entryMethod: "VOICE" | "MANUAL",
     isLast: boolean,
   ) {
-    // Crear la novedad
+    const user = await this.prisma.user.findUnique({
+      where: { firebaseUid },
+      select: { id: true },
+    });
+    if (!user) throw new NotFoundException("Usuario no encontrado");
+
     const novedad = await this.prisma.novedad.create({
       data: {
         description,
@@ -25,10 +30,9 @@ export class NovedadesService {
       },
     });
 
-    // Registrar turno IN/OUT
     await this.prisma.shiftLog.create({
       data: {
-        user: { connect: { firebaseUid } },
+        userId: user.id,
         type: isLast ? ShiftType.OUT : ShiftType.IN,
       },
     });
@@ -37,26 +41,21 @@ export class NovedadesService {
   }
 
   /**
-   * Recupera todas las novedades (de todos los usuarios),
-   * con filtro opcional por fechas `start` y `end`.
+   * Recupera todas las novedades de un usuario, con filtro opcional por fechas.
    */
-  async findAllForUser(
-    _firebaseUid: string,
-    start?: string,
-    end?: string,
-  ) {
-    // Construir filtro de fechas
+  async findAllForUser(firebaseUid: string, start?: string, end?: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { firebaseUid },
+    });
+    if (!user) throw new NotFoundException("Usuario no encontrado");
+
     const dateFilter: { gte?: Date; lte?: Date } = {};
     if (start) dateFilter.gte = new Date(start);
     if (end) dateFilter.lte = new Date(end);
 
-    // Solo aplicamos timestamp si vienen fechas
-    const where: Prisma.NovedadWhereInput = {};
-    if (start || end) {
-      where.timestamp = dateFilter;
-    }
+    const where: Prisma.NovedadWhereInput = { userId: user.id };
+    if (start || end) where.timestamp = dateFilter;
 
-    // Devolvemos TODOS los registros, ordenados descendentemente
     return this.prisma.novedad.findMany({
       where,
       orderBy: { timestamp: "desc" },
@@ -64,8 +63,7 @@ export class NovedadesService {
   }
 
   /**
-   * Devuelve todas las novedades sin filtrar. (Antiguo findAllAdmin)
-   * Puede seguir usándose internamente si se desea.
+   * Devuelve todas las novedades sin filtrar. Sólo Admin.
    */
   async findAllAdmin() {
     return this.prisma.novedad.findMany({
@@ -74,44 +72,76 @@ export class NovedadesService {
   }
 
   /**
-   * Estado actual de turno:
-   * - 'IN'  si el último ShiftLog es IN
-   * - 'OUT' en cualquier otro caso
+   * Estado actual de turno y sesión de inicio:
+   * - Si el último log es OUT (o no hay logs): status="OUT", sessionStart=null.
+   * - Si hay un IN sin OUT posterior: status="IN", sessionStart = primer IN después del último OUT (o primer IN).
    */
-  async getCurrentTurnStatus(firebaseUid: string): Promise<"IN" | "OUT"> {
-    const lastLog = await this.prisma.shiftLog.findFirst({
-      where: { user: { firebaseUid } },
-      orderBy: { timestamp: "desc" },
-      select: { type: true },
-    });
-    return lastLog?.type === ShiftType.IN ? "IN" : "OUT";
-  }
-
-  /**
-   * Duración del turno actual:
-   * - Si el último log es OUT: diferencia entre el OUT y el IN anterior.
-   * - Si está abierto (último log IN): diferencia entre ahora y ese IN.
-   */
-  async getCurrentShiftDuration(firebaseUid: string): Promise<number> {
+  async getCurrentTurnStatus(firebaseUid: string): Promise<{
+    status: "IN" | "OUT";
+    sessionStart: Date | null;
+  }> {
+    // 1) Buscamos el último OUT
     const lastOut = await this.prisma.shiftLog.findFirst({
       where: { user: { firebaseUid }, type: ShiftType.OUT },
       orderBy: { timestamp: "desc" },
       select: { timestamp: true },
     });
-    const lastIn = await this.prisma.shiftLog.findFirst({
-      where: { user: { firebaseUid }, type: ShiftType.IN },
+
+    // 2) Buscamos el último log general
+    const lastLog = await this.prisma.shiftLog.findFirst({
+      where: { user: { firebaseUid } },
       orderBy: { timestamp: "desc" },
+      select: { type: true },
+    });
+
+    // Si no hay logs o el último es OUT → turno cerrado
+    if (!lastLog || lastLog.type === ShiftType.OUT) {
+      return { status: "OUT", sessionStart: null };
+    }
+
+    // Hay un IN abierto: buscamos el primer IN tras lastOut (o el primer IN global)
+    const inFilter: Prisma.ShiftLogWhereInput = {
+      user: { firebaseUid },
+      type: ShiftType.IN,
+      ...(lastOut ? { timestamp: { gt: lastOut.timestamp } } : {}),
+    };
+    const firstIn = await this.prisma.shiftLog.findFirst({
+      where: inFilter,
+      orderBy: { timestamp: "asc" },
       select: { timestamp: true },
     });
 
-    if (lastOut && lastIn && lastOut.timestamp >= lastIn.timestamp) {
-      return Math.round(
-        (lastOut.timestamp.getTime() - lastIn.timestamp.getTime()) / 60000,
-      );
+    return {
+      status: "IN",
+      sessionStart: firstIn ? firstIn.timestamp : null,
+    };
+  }
+
+  /**
+   * Duración del turno actual:
+   * - Si está cerrado (último log OUT): diferencia entre ese OUT y el primer IN de ese turno.
+   * - Si está abierto (último log IN): diferencia entre ahora y el primer IN de ese turno.
+   */
+  async getCurrentShiftDuration(firebaseUid: string): Promise<number> {
+    const { status, sessionStart } =
+      await this.getCurrentTurnStatus(firebaseUid);
+    if (!sessionStart) return 0;
+
+    if (status === "OUT") {
+      // Para OUT: restamos lastOut - sessionStart
+      const lastOut = await this.prisma.shiftLog.findFirst({
+        where: { user: { firebaseUid }, type: ShiftType.OUT },
+        orderBy: { timestamp: "desc" },
+        select: { timestamp: true },
+      });
+      if (lastOut) {
+        return Math.round(
+          (lastOut.timestamp.getTime() - sessionStart.getTime()) / 60000,
+        );
+      }
     }
-    if (lastIn) {
-      return Math.round((Date.now() - lastIn.timestamp.getTime()) / 60000);
-    }
-    return 0;
+
+    // Para IN abierto o sin OUT: tiempo hasta ahora
+    return Math.round((Date.now() - sessionStart.getTime()) / 60000);
   }
 }

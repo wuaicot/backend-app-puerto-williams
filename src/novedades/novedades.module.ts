@@ -1,3 +1,5 @@
+// server/src/novedades/novedades.module.ts
+
 import { Module } from "@nestjs/common";
 import { PrismaModule } from "../database/prisma.module";
 import { NovedadesService } from "./novedades.service";
@@ -7,6 +9,6 @@ import { NovedadesController } from "./novedades.controller";
   imports: [PrismaModule],
   providers: [NovedadesService],
   controllers: [NovedadesController],
-  exports: [NovedadesService], // <-- Exportamos el servicio
+  exports: [NovedadesService], // <-- Hacemos disponible el servicio para otros módulos
 })
 export class NovedadesModule {}
