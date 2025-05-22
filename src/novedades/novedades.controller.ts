@@ -1,12 +1,5 @@
 // server/src/novedades/novedades.controller.ts
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Req,
-  UseGuards,
-} from "@nestjs/common";
+import { Controller, Get, Post, Body, Req, UseGuards } from "@nestjs/common";
 import { NovedadesService } from "./novedades.service";
 import { FirebaseAuthGuard } from "../auth/firebase-auth.guard";
 import { CreateNovedadDto } from "./dto/create-novedad.dto";
