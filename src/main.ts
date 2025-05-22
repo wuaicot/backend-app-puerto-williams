@@ -1,7 +1,6 @@
 // server/src/main.ts
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
-// import { ValidationPipe } from '@nestjs/common'; // Descomentar si usas class-validator
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -9,11 +8,9 @@ async function bootstrap() {
   // Prefijo global “/api” para todos los controllers
   app.setGlobalPrefix("api");
 
-  // Habilitar CORS (asegúrate que el origen sea el correcto para producción/otros entornos)
   app.enableCors({
     origin: process.env.FRONTEND_URL || "http://localhost:3000", // Usar variable de entorno es mejor
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS", // OPTIONS suele ser necesario
-    credentials: true,
   });
 
   // Descomenta para habilitar validación automática basada en DTOs y class-validator
