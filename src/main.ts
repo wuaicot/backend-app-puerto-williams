@@ -1,4 +1,3 @@
-// server/src/main.ts
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 
@@ -8,8 +7,9 @@ async function bootstrap() {
   // Prefijo global “/api” para todos los controllers
   app.setGlobalPrefix("api");
 
+  // Habilitar CORS desde cualquier origen
   app.enableCors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000", // Usar variable de entorno es mejor
+    origin: true, // Permitir todos los orígenes
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS", // OPTIONS suele ser necesario
   });
 
