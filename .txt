@@ -1,6 +1,7 @@
 
 
-
+Remove-Item -Force -Recurse node_modules
+Remove-Item -Force pnpm-lock.yaml
 ♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦
 
 git fetch origin
@@ -14,4 +15,7 @@ TRUNCATE TABLE public."User", public."CredentialRequest", public."ShiftLog", pub
 
 
 --------------------------------------------------
+
+heroku pg:info -a app-puerto-williams-602
+heroku pg:psql -a app-puerto-williams-602
 

@@ -1,4 +1,3 @@
-// server/src/novedades/novedades.service.ts
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../database/prisma.service";
 import { ShiftType, Prisma } from "@prisma/client";
@@ -143,5 +142,18 @@ export class NovedadesService {
 
     // Para IN abierto o sin OUT: tiempo hasta ahora
     return Math.round((Date.now() - sessionStart.getTime()) / 60000);
+  }
+
+  async updateNovedadHighlightStatus(id: string, isHighlighted: boolean) {
+    const novedad = await this.prisma.novedad.findUnique({
+      where: { id },
+    });
+    if (!novedad) {
+      throw new NotFoundException(`Novedad con ID ${id} no encontrada`);
+    }
+    return this.prisma.novedad.update({
+      where: { id },
+      data: { isHighlighted },
+    });
   }
 }
