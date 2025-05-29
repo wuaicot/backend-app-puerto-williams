@@ -1,6 +1,7 @@
 
 
-
+Remove-Item -Force -Recurse node_modules
+Remove-Item -Force pnpm-lock.yaml
 ♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦♦
 
 git fetch origin

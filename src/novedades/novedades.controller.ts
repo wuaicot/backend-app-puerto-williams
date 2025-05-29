@@ -1,9 +1,16 @@
 // server/src/novedades/novedades.controller.ts
-import { Controller, Get, Post, Body, Req, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Req,
+  UseGuards,
+  Param,
+} from "@nestjs/common";
 import { NovedadesService } from "./novedades.service";
 import { FirebaseAuthGuard } from "../auth/firebase-auth.guard";
 import { CreateNovedadDto } from "./dto/create-novedad.dto";
-import { Request } from "express";
 
 interface AuthenticatedRequest extends Request {
   user: { uid: string };
@@ -51,5 +58,11 @@ export class NovedadesController {
       req.user.uid,
     );
     return { minutes };
+  }
+
+  /** Resalta permanentemente una novedad */
+  @Post(":id/highlight")
+  async highlight(@Param("id") id: string) {
+    return this.novedadesService.updateNovedadHighlightStatus(id, true);
   }
 }
