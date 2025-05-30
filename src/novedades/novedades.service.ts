@@ -67,6 +67,14 @@ export class NovedadesService {
   async findAllAdmin() {
     return this.prisma.novedad.findMany({
       orderBy: { timestamp: "desc" },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true, // Including email for potential future use or debugging
+          },
+        },
+      },
     });
   }
 
