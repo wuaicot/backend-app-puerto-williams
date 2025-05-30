@@ -71,7 +71,8 @@ export class NovedadesService {
         user: {
           select: {
             name: true,
-            email: true, // Including email for potential future use or debugging
+            email: true,
+            role: true, // Incluimos la propiedad role
           },
         },
       },
