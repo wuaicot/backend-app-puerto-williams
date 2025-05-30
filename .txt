@@ -1,4 +1,8 @@
 
+pnpm config set registry https://registry.npmmirror.com/
+pnpm config set registry https://registry.npmjs.org/
+pnpm store prune
+pnpm install --force
 
 Remove-Item -Force -Recurse node_modules
 Remove-Item -Force pnpm-lock.yaml
