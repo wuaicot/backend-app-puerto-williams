@@ -23,7 +23,6 @@ async function bootstrap() {
   //     enableImplicitConversion: true, // Permite conversión implícita basado en tipos TS
   //   },
   // }));
-
   const port = process.env.PORT || 4000;
   await app.listen(port);
   console.log(`Backend corriendo en http://localhost:${port}`);
