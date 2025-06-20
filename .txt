@@ -21,6 +21,7 @@ TRUNCATE TABLE public."User", public."CredentialRequest", public."ShiftLog", pub
 --------------------------------------------------
 heroku pg:psql -a app-puerto-williams-602
 heroku pg:info -a app-puerto-williams-602
+heroku config --app app-puerto-williams-602
 
 
 ♦
